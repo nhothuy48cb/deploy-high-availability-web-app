@@ -1,0 +1,59 @@
+Description: >
+  ThuyLN1 (Lukas) / Udacity 2022
+  This CloudFormation script create IAM Role for EC2 (Bastion Host instance and Webapp instances).
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+
+Resources:
+  
+  UdagramRoleIAM:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${EnvironmentName}-Udagram-Role
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+
+  UdagramPolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${EnvironmentName}-Udagram-Policies
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Action:
+          - "ssm:Get*"
+          - "s3:Get*"
+          Resource: '*'
+      Roles:
+      - !Ref UdagramRoleIAM
+
+  UdagramInstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Path: "/"
+      Roles:
+      - !Ref UdagramRoleIAM
+
+Outputs:
+
+  UdagramRoleIAM:
+    Description: Udagram Role IAM
+    Value: !Ref UdagramRoleIAM
+    Export:
+      Name: !Sub ${EnvironmentName}-ROL-IAM
+
+  UdagramInstanceProfile:
+    Description: Instance profile of Udagram Role
+    Value: !Ref UdagramInstanceProfile
+    Export:
+      Name: !Sub ${EnvironmentName}-INS-PROFILE

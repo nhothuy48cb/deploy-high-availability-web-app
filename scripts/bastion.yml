@@ -1,0 +1,110 @@
+Description: >
+  ThuyLN1 (Lukas) / Udacity 2022
+  This CloudFormation script create SG, EC2 instance and EIP for Bastion Host (AZ1).
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+  
+  NetworkAccessIP:
+    Description: Source that has SSH access to the bastion host. (i.e. 50.32.108.38/32)
+    Type: String
+    Default: 0.0.0.0/0
+
+  InstanceType:
+    Description: The instance type to use for the bastion host
+    Default: t3.small
+    Type: String
+    
+  InstanceAMI:
+    Type: String
+    Default: ami-005de95e8ff495156
+    Description: AMI of a bastion host instance to use
+
+Resources:
+  
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSH Access to Bastion Instance
+      VpcId:
+        Fn::ImportValue:
+          !Sub ${EnvironmentName}-VPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref NetworkAccessIP
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 0
+        ToPort: 65535
+        CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Security Group Bastion Host
+
+  ElasticIpBastion:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain:
+        Fn::ImportValue: !Sub ${EnvironmentName}-VPCID
+
+  BastionEC2Instance:
+    Type: AWS::EC2::Instance
+    DependsOn:
+    - BastionSecurityGroup
+    Properties:
+      IamInstanceProfile:
+        Fn::ImportValue: 
+          !Sub ${EnvironmentName}-INS-PROFILE
+      ImageId: !Ref InstanceAMI
+      InstanceType: !Ref InstanceType
+      SecurityGroupIds:
+      - Ref: BastionSecurityGroup
+      SubnetId: 
+        Fn::ImportValue: 
+          !Sub ${EnvironmentName}-PUB1-SN
+      BlockDeviceMappings:
+        - DeviceName: "/dev/sdk"
+          Ebs:
+            VolumeSize: "10"
+            DeleteOnTermination: true
+            VolumeType: "gp2"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+
+          apt-get install unzip awscli -y
+
+          aws ssm get-parameter --name udagramBastionKey --with-decryption --output text --query Parameter.Value --region ${AWS::Region} > authorized_keys
+          cp ./authorized_keys /home/ubuntu/.ssh/
+          chmod 700 /home/ubuntu/.ssh/authorized_keys
+          
+          aws ssm get-parameter --name udagramWebappKeyPrivate --with-decryption --output text --query Parameter.Value --region ${AWS::Region} > /home/ubuntu/.ssh/id_rsa
+          chown ubuntu:ubuntu /home/ubuntu/.ssh/id_rsa
+          chmod 700 /home/ubuntu/.ssh/id_rsa
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Bastion Host
+  
+  BastionEC2InstanceEIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref BastionEC2Instance
+      AllocationId: !GetAtt ElasticIpBastion.AllocationId
+
+Outputs:
+  BastionSecurityGroupSSH:
+    Description: Will use to allow SSH connections from the bastion host
+    Value: !Ref BastionSecurityGroup
+    Export:
+      Name: !Sub ${EnvironmentName}-BASTION-SG
+
+  BastionPublicIPAddress:
+    Description: Bastion host public IP
+    Value: !Ref ElasticIpBastion
+    Export:
+      Name: !Sub ${EnvironmentName}-BASTION-PUBLIC-IP

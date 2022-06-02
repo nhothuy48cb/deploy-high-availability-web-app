@@ -1,0 +1,18 @@
+[
+	{
+		"ParameterKey": "EnvironmentName",
+		"ParameterValue": "UdagramProject"
+	},
+	{
+		"ParameterKey": "InstanceType",
+		"ParameterValue": "t3.small"
+    },
+    {
+        "ParameterKey": "InstanceAMI",
+        "ParameterValue": "ami-005de95e8ff495156"
+    },
+    {
+        "ParameterKey": "S3CodeRepo",
+        "ParameterValue": "s3://s3-658942388635-bucket/udagram.zip"
+    }
+]

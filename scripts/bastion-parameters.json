@@ -1,0 +1,18 @@
+[
+	{
+		"ParameterKey": "EnvironmentName",
+		"ParameterValue": "UdagramProject"
+	},
+    {
+        "ParameterKey": "NetworkAccessIP",
+        "ParameterValue": "0.0.0.0/0"
+    },
+	{
+		"ParameterKey": "InstanceType",
+		"ParameterValue": "t3.small"
+    },
+    {
+        "ParameterKey": "InstanceAMI",
+        "ParameterValue": "ami-005de95e8ff495156"
+    }
+]

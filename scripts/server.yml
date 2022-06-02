@@ -1,0 +1,248 @@
+Description: >
+  ThuyLN1 (Lukas) / Udacity 2022
+  This CloudFormation script deploys a ELB, ASG, TG, Webapp instances.
+
+Parameters:
+  EnvironmentName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+  
+  InstanceAMI:
+    Type: String
+    Default: ami-005de95e8ff495156
+    Description: AMI of a Webapp instance to use
+
+  InstanceType:
+    Description: The EC2 instance type for the launch configuration (Webapp)
+    Default: t3.small
+    Type: String
+
+  WebAppServersMinSize:
+    Description: Minimum number of web application servers in AutoScalingGroup
+    Type: String
+    Default: 2
+
+  WebAppServersMaxSize:
+    Description: Maximum number of web application servers  AutoScalingGroup
+    Type: String
+    Default: 4
+
+  S3CodeRepo:
+    Description: Full S3 path and file name of zipped file
+    Type: String
+    Default: s3://s3-658942388635-bucket/udagram.zip
+
+Resources:
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to our Load Balancer
+      VpcId:
+        Fn::ImportValue:
+          !Sub ${EnvironmentName}-VPCID
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Security Group of Load Balancer
+
+  WebAppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription:  Allow ssh connections from Bastion Host
+      VpcId:
+        Fn::ImportValue:
+          !Sub ${EnvironmentName}-VPCID
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        SourceSecurityGroupId:
+          Fn::ImportValue:
+            !Sub ${EnvironmentName}-BASTION-SG
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Security Group of Webapp
+
+  WebAppTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: 80
+      Protocol: HTTP
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 8
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+      VpcId: 
+        Fn::ImportValue: !Sub ${EnvironmentName}-VPCID
+
+  WebAppLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+      - Fn::ImportValue: !Sub ${EnvironmentName}-PUB1-SN
+      - Fn::ImportValue: !Sub ${EnvironmentName}-PUB2-SN
+      SecurityGroups:
+      - Ref: LoadBalancerSecurityGroup
+
+  ELBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref WebAppTargetGroup
+      LoadBalancerArn: !Ref WebAppLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  LoadBalancerListenerRule:
+      Type: AWS::ElasticLoadBalancingV2::ListenerRule
+      Properties:
+        Actions:
+        - Type: forward
+          TargetGroupArn: !Ref WebAppTargetGroup
+        Conditions:
+        - Field: path-pattern
+          Values: [/]
+        ListenerArn: !Ref ELBListener
+        Priority: 1
+  
+  WebAppLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: !Ref InstanceAMI
+      IamInstanceProfile:
+        Fn::ImportValue:
+          !Sub ${EnvironmentName}-INS-PROFILE
+      SecurityGroups:
+      - !Ref WebAppSecurityGroup
+      InstanceType: !Ref InstanceType
+      BlockDeviceMappings:
+      - DeviceName: "/dev/sdk"
+        Ebs:
+          VolumeSize: '10'
+          DeleteOnTermination: true
+          VolumeType: "gp2"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install unzip awscli apache2 -y
+
+          aws ssm get-parameter --name udagramWebappKey --with-decryption --output text --query Parameter.Value --region ${AWS::Region} > authorized_keys
+          cp ./authorized_keys /home/ubuntu/.ssh/
+          chmod 700 /home/ubuntu/.ssh/authorized_keys
+
+          systemctl start apache2.service
+          sudo rm /var/www/html/index.html
+          sudo aws s3 cp ${S3CodeRepo} /var/www/html
+          sudo unzip /var/www/html/udagram.zip -d /var/www/html
+          systemctl restart apache2.service
+
+  WebAppAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName: !Ref WebAppLaunchConfiguration
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub ${EnvironmentName}-PRI-NETS
+      MinSize: !Ref WebAppServersMinSize
+      MaxSize: !Ref WebAppServersMaxSize
+      DesiredCapacity: 2
+      Tags:
+      - Key: Name
+        Value: !Sub ${EnvironmentName} WebApp AutoScalingGroup
+        PropagateAtLaunch: True
+      TargetGroupARNs:
+      - Ref: WebAppTargetGroup
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: True
+  
+  #ScalingUp
+  WebAppScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref WebAppAutoScalingGroup
+      Cooldown: 300
+      ScalingAdjustment: 1
+
+  #ScalingDown
+  WebAppScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref WebAppAutoScalingGroup
+      Cooldown: 300
+      ScalingAdjustment: -1
+
+  #CloudWatch alerts
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CpuHigh"
+      AlarmDescription: Scale-up if CPU usage is > 80% for 5 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+      - !Ref WebAppScaleUpPolicy
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref WebAppAutoScalingGroup
+
+  #CloudWatch alerts
+  CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale-down if CPU usage is < 60% for 5 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 60
+      ComparisonOperator: LessThanThreshold
+      AlarmActions:
+      - !Ref WebAppScaleDownPolicy
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref WebAppAutoScalingGroup
+
+Outputs:
+
+  WebsiteURL:
+    Description: DNS Name of the web application throught the Load Balancer
+    Value: !Sub http://${WebAppLoadBalancer.DNSName}
+    Export:
+      Name: !Sub ${EnvironmentName}-DNS-NAME
+
+  LoadBalancerSecurityGroup:
+    Description: LoadBalancer Security Group
+    Value: !Ref LoadBalancerSecurityGroup
+    Export:
+      Name: !Sub ${EnvironmentName}-ELB-SG
+  
+  WebAppSecurityGroup:
+    Description: WebApp Security Group
+    Value: !Ref WebAppSecurityGroup
+    Export:
+      Name: !Sub ${EnvironmentName}-WEBAPP-SG
