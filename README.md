@@ -5,7 +5,7 @@ This needs to be done in an automated fashion so that the infrastructure can be 
 ### Diagram
 ![Diagram](/UdagramInfraDiagrams.png)
 ### Content
-1. The `[app](/app)` folder has the website file (`[udagram.zip][app/udagram.zip]`) to deploy.
+1. The [app](/app) folder has the website file ([udagram.zip][app/udagram.zip]) to deploy.
 2. The `[bash](/bash)` folder has the code files using to help such as utilities:
     * `create-ssh-key.sh` can be used to create a key pair (using `ssh-keygen`) and save to AWS Parameter Store.
 	* `create.sh` can be used to create an AWS CloudFormation stack in region `us-east-1`
