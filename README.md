@@ -5,9 +5,9 @@ This needs to be done in an automated fashion so that the infrastructure can be 
 ### Diagram
 ![Diagram](/UdagramInfraDiagrams.png)
 ### Content
-1. The [app](/app) folder has the website file ([udagram.zip][app/udagram.zip]) to deploy.
-2. The `[bash](/bash)` folder has the code files using to help such as utilities:
-    * `create-ssh-key.sh` can be used to create a key pair (using `ssh-keygen`) and save to AWS Parameter Store.
+1. The `app` folder has the website file (`udagram.zip`) to deploy.
+2. The `bash` folder has the code files using to help such as utilities:
+    * `create-ssh-key.sh` can be used to create key pair (using `ssh-keygen`) and save to AWS Parameter Store.
 	* `create.sh` can be used to create an AWS CloudFormation stack in region `us-east-1`
 	* `update.sh` can be used to update an existing AWS Cloudformation stack in region `us-east-1`
 	* `delete.sh` can be used to delete an AWS CloudFormation stack
@@ -16,12 +16,12 @@ This needs to be done in an automated fashion so that the infrastructure can be 
 4. The `scripts` folder has CloudFormation scripts:
     * `iam.yml` uses `iam-parameters.json` to deploy a stack with the role that will use to upload/download files from the bucket and get parameters from AWS Parameter Store.
     * `s3.yml` uses `s3-parameters.json` to deploy a stack with the `AWS::S3` bucket that stores the website files, that is, `udagram.zip`
-    * `network.yml` uses `network-parameters.json` to deploy a stack with the whole network to the will using in the project (`VPC`, `NAT Gateway`, ...).
+    * `network.yml` uses `network-parameters.json` to deploy a stack with the whole network to the will using in the project.
     * `bastion.yml` uses `bastion-parameters.json` to deploy a stack with a bastion host to connect the hosts with the website of a secure way.
     * `server.yml` uses `server-parameters.json` to deploy a stack with the website hosts. Also deploy these hosts using `LoadBalancer`, `AutoScaling`, and `ClouWatch` alarms.
 ### Instructions
 To deploy this project follow the instructions are below:
-1. You need to create key pair that will use to connect to Bastion Host, in a terminal using the file `bash/create-ssh-key.sh`
+1. You need to create key pair that will use to connect to Bastion Host, in a terminal using the file `bash/create-ssh-key.sh`. The key pairs that will be generated. Use private key `udagramBastionKey` to ssh to Bastion host. Keys `udagramBastionKey.pub`, `udagramWebappKeyPrivate`, `udagramWebappKey.pub` will save to AWS Parameter Store. 
     > `bash/create-ssh-key.sh`
 2. You need to create the s3 and iam stacks, in a terminal using the file `bash/create.sh` 
     > `bash/create.sh iam-stack scripts/iam.yml scripts/iam-parameters.json`
@@ -33,4 +33,4 @@ To deploy this project follow the instructions are below:
     > `bash/create.sh bastion-stack scripts/bastion.yml scripts/bastion-parameters.json`
     > `bash/create.sh server-stack scripts/server.yml scripts/server-parameters.json`
 
-You can access to the final website using this LoadBalancer [link](#)
+You can access to the final website using this LoadBalancer [link](http://serve-WebAp-1DNDAQC7LT41Y-118871296.us-east-1.elb.amazonaws.com)
