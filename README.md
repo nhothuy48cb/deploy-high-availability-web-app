@@ -25,18 +25,22 @@ To deploy this project follow the instructions are below:
 The key pairs that will be generated.
 Use private key `udagramBastionKey` to ssh to Bastion host. 
 Keys `udagramBastionKey.pub`, `udagramWebappKeyPrivate`, `udagramWebappKey.pub` will save to AWS Parameter Store. 
-    > `bash/create-ssh-key.sh`
-
+```
+    bash/create-ssh-key.sh
+```
 2. You need to create the s3 and iam stacks, in a terminal using the file `bash/create.sh` 
-    > `bash/create.sh iam-stack scripts/iam.yml scripts/iam-parameters.json`
-    > `bash/create.sh s3-stack scripts/s3.yml scripts/s3-parameters.json`
-
+```
+    bash/create.sh iam-stack scripts/iam.yml scripts/iam-parameters.json
+    bash/create.sh s3-stack scripts/s3.yml scripts/s3-parameters.json
+```
 3. You need to upload the website file `app/udagram.zip` to s3 bucket (created previously eg. `s3-658942388635-bucket`), in a terminal using aws cli
-    > `aws s3 cp app/udagram.zip s3://s3-658942388635-bucket`
-
+```
+   aws s3 cp app/udagram.zip s3://s3-658942388635-bucket
+```
 4. You need to create the other stacks described above, in a terminal
-    > `bash/create.sh network-stack scripts/network.yml scripts/network-parameters.json`
-    > `bash/create.sh bastion-stack scripts/bastion.yml scripts/bastion-parameters.json`
-    > `bash/create.sh server-stack scripts/server.yml scripts/server-parameters.json`
-
+```
+    bash/create.sh network-stack scripts/network.yml scripts/network-parameters.json
+    bash/create.sh bastion-stack scripts/bastion.yml scripts/bastion-parameters.json
+    bash/create.sh server-stack scripts/server.yml scripts/server-parameters.json
+```
 You can access to the final website using this LoadBalancer [link](http://serve-WebAp-1DNDAQC7LT41Y-118871296.us-east-1.elb.amazonaws.com)
