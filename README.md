@@ -21,14 +21,20 @@ This needs to be done in an automated fashion so that the infrastructure can be 
     * `server.yml` uses `server-parameters.json` to deploy a stack with the website hosts. Also deploy these hosts using `LoadBalancer`, `AutoScaling`, and `ClouWatch` alarms.
 ### Instructions
 To deploy this project follow the instructions are below:
-1. You need to create key pair that will use to connect to Bastion Host, in a terminal using the file `bash/create-ssh-key.sh`. The key pairs that will be generated. Use private key `udagramBastionKey` to ssh to Bastion host. Keys `udagramBastionKey.pub`, `udagramWebappKeyPrivate`, `udagramWebappKey.pub` will save to AWS Parameter Store. 
+1. You need to create key pair that will use to connect to Bastion Host, in a terminal using the file `bash/create-ssh-key.sh`.
+The key pairs that will be generated.
+Use private key `udagramBastionKey` to ssh to Bastion host. 
+Keys `udagramBastionKey.pub`, `udagramWebappKeyPrivate`, `udagramWebappKey.pub` will save to AWS Parameter Store. 
     > `bash/create-ssh-key.sh`
+
 2. You need to create the s3 and iam stacks, in a terminal using the file `bash/create.sh` 
     > `bash/create.sh iam-stack scripts/iam.yml scripts/iam-parameters.json`
     > `bash/create.sh s3-stack scripts/s3.yml scripts/s3-parameters.json`
-4. You need to upload the website file `app/udagram.zip` to s3 bucket (created previously eg. `s3-658942388635-bucket`), in a terminal using aws cli
+
+3. You need to upload the website file `app/udagram.zip` to s3 bucket (created previously eg. `s3-658942388635-bucket`), in a terminal using aws cli
     > `aws s3 cp app/udagram.zip s3://s3-658942388635-bucket`
-5. You need to create the other stacks described above, in a terminal
+
+4. You need to create the other stacks described above, in a terminal
     > `bash/create.sh network-stack scripts/network.yml scripts/network-parameters.json`
     > `bash/create.sh bastion-stack scripts/bastion.yml scripts/bastion-parameters.json`
     > `bash/create.sh server-stack scripts/server.yml scripts/server-parameters.json`
