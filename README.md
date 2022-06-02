@@ -3,7 +3,7 @@ Your company is creating an Instagram clone called Udagram. Developers pushed th
 You have been tasked with deploying the application, along with the necessary supporting software into its matching infrastructure.
 This needs to be done in an automated fashion so that the infrastructure can be discarded as soon as the testing team finishes their tests and gathers their results.
 ### Diagram
-![Diagram](#)
+![Diagram](/blob/master/UdagramInfraDiagrams.png)
 ### Content
 1. The `app` folder has the website file (`udagram.zip`) to deploy.
 2. The `bash` folder has the code files using to help such as utilities:
