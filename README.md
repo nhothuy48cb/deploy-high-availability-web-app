@@ -3,10 +3,10 @@ Your company is creating an Instagram clone called Udagram. Developers pushed th
 You have been tasked with deploying the application, along with the necessary supporting software into its matching infrastructure.
 This needs to be done in an automated fashion so that the infrastructure can be discarded as soon as the testing team finishes their tests and gathers their results.
 ### Diagram
-![Diagram](/blob/master/UdagramInfraDiagrams.png)
+![Diagram](/UdagramInfraDiagrams.png)
 ### Content
-1. The `app` folder has the website file (`udagram.zip`) to deploy.
-2. The `bash` folder has the code files using to help such as utilities:
+1. The `[app](/app)` folder has the website file (`[udagram.zip][app/udagram.zip]`) to deploy.
+2. The `[bash](/bash)` folder has the code files using to help such as utilities:
     * `create-ssh-key.sh` can be used to create a key pair (using `ssh-keygen`) and save to AWS Parameter Store.
 	* `create.sh` can be used to create an AWS CloudFormation stack in region `us-east-1`
 	* `update.sh` can be used to update an existing AWS Cloudformation stack in region `us-east-1`
